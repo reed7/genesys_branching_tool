@@ -16,6 +16,8 @@ import shutil
 import logging
 import xml.etree.ElementTree as ET
 from subprocess import call
+from myProgressBar import MyProgressBar
+import traceback
 
 
 XML_NAME_SPACE = "http://maven.apache.org/POM/4.0.0"
@@ -72,7 +74,7 @@ class MainGUI(Tkinter.Frame):
         self.logListBox.grid(column=0, row=4, columnspan=2, pady=5)
         dirlogb_yscroll.grid(column=1, row=4, sticky=Tkinter.E+Tkinter.N+Tkinter.S, padx=1, pady=6)
 
-        self.progressBar = Tkinter.Canvas(width=PROGRESS_BAR_WIDTH, height=30, bd=0)
+        self.progressBar = MyProgressBar(width=PROGRESS_BAR_WIDTH, height=30, bd=0)
         self.progressBar.grid(column=0, row=5, padx=17, sticky=Tkinter.W)
 
         self.dir_opt = options = {}
@@ -158,9 +160,6 @@ class WorkerThread(threading.Thread):
 
     def run(self):
         total_files = 0
-        current_progress = 0
-        tmp_bar = None
-        self.progress_bar.delete(Tkinter.ALL)
 
         for idx in self.selectedIdx:
             project = os.path.join(self.workingDir, self.availableDirs[idx])
@@ -171,6 +170,8 @@ class WorkerThread(threading.Thread):
 
         self.logListBox.insert(0, "Found {} pom files in {} projects!".format(total_files, len(self.selectedIdx)))
 
+        self.progress_bar.init_progress(total_unit=total_files)
+
         for idx in self.selectedIdx:
             if self.continueTag:
                 project = os.path.join(self.workingDir, self.availableDirs[idx])
@@ -179,9 +180,7 @@ class WorkerThread(threading.Thread):
                     for currentDir, subDirs, files in os.walk(project):
                         for fil in files:
                             if (fil == "pom.xml" or fil == "reporting-aggregator-pom.xml") and ("bin" not in currentDir and "target" not in currentDir):
-                                current_progress += PROGRESS_BAR_WIDTH * float(1) / total_files
-                                self.progress_bar.delete(tmp_bar)
-                                tmp_bar = self.progress_bar.create_rectangle(0, 0, current_progress, 25, fill="blue", outline="blue")
+                                self.progress_bar.refresh_bar_by_unit(unit=1)
 
                                 pom_file = os.path.join(currentDir, fil)
 
@@ -218,6 +217,7 @@ class WorkerThread(threading.Thread):
                     else:
                         logging.error("Error processing project {}, error code {}. Skipping...".format(project, e.errno))
                 except Exception as e:
+                    traceback.print_exc()
                     logging.error(e)
                 finally:
                     os.chdir(self.workingDir)
