@@ -91,22 +91,22 @@ class MainGUI(Tkinter.Frame):
 
         self.dirListBox.delete(0, Tkinter.END)
 
+        new_dir_list = []
         if len(self.dirList) > 0:
-            found_pom = False
             for item in self.dirList:
                 for fil in os.listdir(os.path.join(self.workingDir, item)):
-                    if fil.endswith(VALID_POM_FILE):
-                        found_pom = True
+                    if fil.endswith(VALID_POM_FILE):  # Only dir contains .pom file(s) will be shown in the box.
+                        new_dir_list.append(item)
                         break
 
-                if found_pom:
-                    self.dirListBox.insert(Tkinter.END, item)
+            for d in new_dir_list:
+                self.dirListBox.insert(Tkinter.END, d)
 
-        if self.dirListBox.size() == 0:
+            self.dirList = new_dir_list
+            self.execBtn['state'] = Tkinter.ACTIVE
+        else:
             self.dirListBox.insert(Tkinter.END, "Can't find any valid Maven project!")
             self.execBtn['state'] = Tkinter.DISABLED
-        else:
-            self.execBtn['state'] = Tkinter.ACTIVE
 
     def exe_branching(self):
         selected_idx = self.dirListBox.curselection()
